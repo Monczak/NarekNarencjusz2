@@ -152,3 +152,6 @@ fabric.properties
 
 # Token file
 config/token
+
+# Secret config
+config/secretconfig.json
