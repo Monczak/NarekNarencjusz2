@@ -42,7 +42,7 @@ class VcCommands(commands.Cog):
     async def join(self, ctx):
         await self._join(ctx)
 
-    @cog_ext.cog_slash(name="join", description="Joins the user's voice channel", guild_ids=[631031037161635861])
+    @cog_ext.cog_slash(name="join", description="Joins the user's voice channel")
     async def slashjoin(self, ctx):
         await self._join(ctx)
 
@@ -82,11 +82,10 @@ class VcCommands(commands.Cog):
         )
         await ctx.send(embed=embed)
 
-
     @commands.command(name="leave")
     async def leave(self, ctx):
         await self._leave(ctx)
 
-    @cog_ext.cog_slash(name="leave", description="Leaves the current voice channel", guild_ids=[631031037161635861])
+    @cog_ext.cog_slash(name="leave", description="Leaves the current voice channel")
     async def slashleave(self, ctx):
         await self._leave(ctx)

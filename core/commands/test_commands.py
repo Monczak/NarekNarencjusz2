@@ -3,6 +3,7 @@ from discord.ext import commands
 from discord_slash import cog_ext
 from discord_slash.utils import manage_commands
 
+
 class TestCommands(commands.Cog):
     guild_ids = []
     token = None
@@ -24,13 +25,13 @@ class TestCommands(commands.Cog):
     async def ping(self, ctx):
         await self._ping(ctx)
 
-    @cog_ext.cog_slash(name="ping", description="Checks the bot's response time", guild_ids=[631031037161635861])
+    @cog_ext.cog_slash(name="ping", description="Checks the bot's response time")
     async def slashping(self, ctx):
         await self._ping(ctx)
 
     @commands.command(name="removecmds")
     async def remove_cmds(self, ctx):
-        await manage_commands.remove_all_commands_in(864093985656012811, self.token, 631031037161635861)
+        await manage_commands.remove_all_commands_in(864093985656012811, self.token, ctx.guild.id)
         embed = discord.Embed(
             title=f":white_check_mark: All slash commands have been removed",
             color=discord.Color(8847232)
