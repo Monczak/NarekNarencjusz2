@@ -53,7 +53,7 @@ class VcCommands(commands.Cog):
             else:
                 await self.disconnect_not_in_vc(ctx)
         else:
-            if ctx.bot.voice_clients:   # TODO: Redo this to consider only guild-specific voice channels
+            if ctx.guild.voice_client:
                 await self.disconnect_from_voice(ctx)
             else:
                 await self.disconnect_not_in_vc(ctx)
