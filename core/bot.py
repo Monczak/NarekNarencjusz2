@@ -3,8 +3,10 @@ import json
 from discord.ext import commands
 from core.logger import Logger
 from discord_slash import SlashCommand
+from discord_slash.utils import manage_commands
 
 from core.commands.test_commands import TestCommands
+from core.commands.vc_commands import VcCommands
 
 
 def load_config():
@@ -38,5 +40,6 @@ async def on_ready():
 
 
 def start_bot(token):
-    client.add_cog(TestCommands(client, config["guildIds"]))
+    client.add_cog(TestCommands(client, config["guildIds"], token))
+    client.add_cog(VcCommands(client, config["guildIds"]))
     client.run(token)
