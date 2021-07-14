@@ -40,6 +40,6 @@ async def on_ready():
 
 
 def start_bot(token):
-    client.add_cog(TestCommands(client, config["guildIds"], token))
-    client.add_cog(VcCommands(client, config["guildIds"]))
+    client.add_cog(TestCommands(client, config, token))
+    client.add_cog(VcCommands(client, config))
     client.run(token)
