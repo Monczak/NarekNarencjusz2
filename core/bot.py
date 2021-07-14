@@ -1,5 +1,6 @@
 import os
 import json
+import glob
 
 import discord
 from discord.ext import commands
@@ -51,6 +52,20 @@ else:
 
 client = commands.Bot(command_prefix=config["commandPrefix"], activity=activity)
 slash = SlashCommand(client, sync_commands=True)
+
+Logger.log("Clearing TTS file folder...")
+tts_files = glob.glob(os.path.join(config["ttsFilePath"], "*.wav"))
+success = True
+for f in tts_files:
+    try:
+        os.remove(f)
+    except OSError as err:
+        Logger.error(f"Error while cleaning TTS file folder: {f} : {err.strerror}")
+        success = False
+if success:
+    Logger.log("TTS file folder cleared")
+else:
+    Logger.warn("TTS file folder still has some files left behind, as some couldn't be removed")
 
 
 @client.event

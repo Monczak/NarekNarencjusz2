@@ -5,8 +5,12 @@ from discord_slash import cog_ext, SlashContext
 from discord_slash.utils.manage_commands import create_option
 from asyncio import sleep
 import os
+import wave
+import contextlib
+import math
 
 from core.text_to_speech import create_tts_file
+from core.utils import timestamp
 
 
 class VcCommands(commands.Cog):
@@ -119,11 +123,19 @@ class VcCommands(commands.Cog):
     async def synthesize_and_speak(self, ctx, message, voice_client):
         file_path = create_tts_file(self.config["ttsFilePath"], message)
 
+        with contextlib.closing(wave.open(file_path, "r")) as file:
+            frames = file.getnframes()
+            rate = file.getframerate()
+            duration = frames / float(rate)
+        duration_timestamp = timestamp(duration)
+
+        embed_content = message
+
         speaking_msg = await ctx.send(embed=discord.Embed(
             title=f":speaker: Speaking!",
-            description=message,
-            color=discord.Color(8847232)
-        ))
+            description=embed_content,
+            color=discord.Color(8847232),
+        ).set_footer(text=duration_timestamp))
 
         voice_client.play(discord.FFmpegPCMAudio(executable="ffmpeg.exe", source=file_path))
 
@@ -132,9 +144,9 @@ class VcCommands(commands.Cog):
 
         await speaking_msg.edit(embed=discord.Embed(
             title=f":speaker: Speaking finished",
-            description=message,
+            description=embed_content,
             color=discord.Color(8847232)
-        ))
+        ).set_footer(text=duration_timestamp))
 
         os.remove(file_path)
 
