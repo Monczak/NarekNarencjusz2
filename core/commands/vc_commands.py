@@ -121,6 +121,7 @@ class VcCommands(commands.Cog):
 
         speaking_msg = await ctx.send(embed=discord.Embed(
             title=f":speaker: Speaking!",
+            description=message,
             color=discord.Color(8847232)
         ))
 
@@ -131,6 +132,7 @@ class VcCommands(commands.Cog):
 
         await speaking_msg.edit(embed=discord.Embed(
             title=f":speaker: Speaking finished",
+            description=message,
             color=discord.Color(8847232)
         ))
 

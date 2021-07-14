@@ -1,4 +1,6 @@
 {
   "commandPrefix": "n!",
-  "ttsFilePath": "tts/"
+  "ttsFilePath": "tts/",
+  "activityType": "listening",
+  "activityMessage": "undeniably divine TTS voices"
 }

@@ -1,5 +1,7 @@
 import os
 import json
+
+import discord
 from discord.ext import commands
 from core.logger import Logger
 from discord_slash import SlashCommand
@@ -30,7 +32,24 @@ def load_config():
 config = load_config()
 Logger.log(f"Prefix is {config['commandPrefix']}")
 
-client = commands.Bot(command_prefix=config["commandPrefix"])
+activities = {
+    "playing": discord.Game(name=config["activityMessage"]),
+    "listening": discord.Activity(type=discord.ActivityType.listening, name=config["activityMessage"]),
+    "watching": discord.Activity(type=discord.ActivityType.watching, name=config["activityMessage"]),
+    "streaming": discord.Streaming(name=config["activityMessage"], url=""),
+    "competing": discord.Activity(type=discord.ActivityType.competing, name=config["activityMessage"]),
+}
+
+activity = None
+if "activityType" not in config.keys():
+    Logger.warn(f"Activity not specified, using blank activity")
+elif config["activityType"] not in activities.keys():
+    Logger.warn(f"Invalid activity {config['activityType']}, must be one of \"playing\", \"listening\", "
+                f"\"watching\", \"streaming\", \"competing\"")
+else:
+    activity = activities[config["activityType"]]
+
+client = commands.Bot(command_prefix=config["commandPrefix"], activity=activity)
 slash = SlashCommand(client, sync_commands=True)
 
 
