@@ -5,7 +5,7 @@ import glob
 import discord
 from discord.ext import commands
 from core.logger import Logger
-from discord_slash import SlashCommand
+from discord_slash import SlashCommand, ComponentContext
 from discord_slash.utils import manage_commands
 
 from core.commands.test_commands import TestCommands

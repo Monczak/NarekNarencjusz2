@@ -1,8 +1,10 @@
 import discord
 from discord.ext import commands
 from discord.voice_client import VoiceClient
-from discord_slash import cog_ext, SlashContext
+from discord_slash import SlashCommand, cog_ext, SlashContext, ComponentContext
 from discord_slash.utils.manage_commands import create_option
+from discord_slash.utils.manage_components import create_button, create_actionrow
+from discord_slash.model import ButtonStyle
 from asyncio import sleep
 import os
 import wave
@@ -11,6 +13,7 @@ import math
 
 from core.text_to_speech import create_tts_file
 from core.utils import timestamp
+from core.storage import speaking_messages, embed_contents
 
 
 class VcCommands(commands.Cog):
@@ -99,15 +102,15 @@ class VcCommands(commands.Cog):
     async def slashleave(self, ctx):
         await self._leave(ctx)
 
-    async def _speak(self, ctx, message, defer=False):
+    async def _speak(self, ctx, message, is_slash=False):
         if ctx.author.voice:
             if ctx.author.voice.channel and ctx.author.voice.channel == ctx.guild.voice_client.channel:
                 voice_client: discord.voice_client.VoiceClient = ctx.guild.voice_client
                 if not voice_client.is_playing():
-                    if defer:
+                    if is_slash:
                         await ctx.defer()
 
-                    await self.synthesize_and_speak(ctx, message, voice_client)
+                    await self.synthesize_and_speak(ctx, message, voice_client, is_slash)
                 else:
                     await ctx.send(embed=discord.Embed(
                         title=f":x: Please wait until I finish speaking.",
@@ -120,7 +123,7 @@ class VcCommands(commands.Cog):
                     color=discord.Color(8847232)
                 ))
 
-    async def synthesize_and_speak(self, ctx, message, voice_client):
+    async def synthesize_and_speak(self, ctx, message, voice_client, is_slash):
         file_path = create_tts_file(self.config["ttsFilePath"], message)
 
         with contextlib.closing(wave.open(file_path, "r")) as file:
@@ -136,10 +139,12 @@ class VcCommands(commands.Cog):
             description=embed_content,
             color=discord.Color(8847232),
         ).set_footer(text=duration_timestamp))
+        speaking_messages[voice_client] = speaking_msg
+        embed_contents[voice_client] = (embed_content, duration_timestamp)
 
         voice_client.play(discord.FFmpegPCMAudio(executable="ffmpeg.exe", source=file_path))
 
-        while voice_client.is_playing():
+        while voice_client.is_playing() or voice_client.is_paused():
             await sleep(.1)
 
         await speaking_msg.edit(embed=discord.Embed(
@@ -149,6 +154,7 @@ class VcCommands(commands.Cog):
         ).set_footer(text=duration_timestamp))
 
         os.remove(file_path)
+        speaking_messages.pop(voice_client)
 
     @commands.command(name="speak")
     async def speak(self, ctx):
@@ -164,4 +170,82 @@ class VcCommands(commands.Cog):
         )
     ])
     async def slashspeak(self, ctx, text):
-        await self._speak(ctx, text, defer=True)
+        await self._speak(ctx, text, is_slash=True)
+
+    async def _pause(self, ctx: SlashContext, is_slash=False):
+        if ctx.author.voice:
+            if ctx.author.voice.channel and ctx.author.voice.channel == ctx.guild.voice_client.channel:
+                voice_client: discord.voice_client.VoiceClient = ctx.guild.voice_client
+                if voice_client in speaking_messages.keys():
+                    speaking_msg = speaking_messages[voice_client]
+                    if voice_client.is_playing():
+                        voice_client.pause()
+                        await speaking_msg.edit(embed=discord.Embed(
+                                title=f":speaker: Speaking (paused)",
+                                description=embed_contents[voice_client][0],
+                                color=discord.Color(8847232)
+                            ).set_footer(text=embed_contents[voice_client][1]))
+                        if is_slash:
+                            await ctx.send(embed=discord.Embed(
+                                title=f":pause_button: Paused",
+                                color=discord.Color(8847232)
+                            ))
+                    else:
+                        voice_client.resume()
+                        await speaking_msg.edit(embed=discord.Embed(
+                            title=f":speaker: Speaking",
+                            description=embed_contents[voice_client][0],
+                            color=discord.Color(8847232)
+                        ).set_footer(text=embed_contents[voice_client][1]))
+                        if is_slash:
+                            await ctx.send(embed=discord.Embed(
+                                title=f":arrow_forward: Unpaused",
+                                color=discord.Color(8847232)
+                            ))
+                else:
+                    await ctx.send(embed=discord.Embed(
+                        title=f":x: Not speaking anything right now.",
+                        color=discord.Color(8847232)
+                    ))
+                return
+        await ctx.send(embed=discord.Embed(
+                    title=f":x: You need to be connected to the same voice channel as the bot.",
+                    color=discord.Color(8847232)
+                ))
+
+    @commands.command(name="pause")
+    async def pause(self, ctx):
+        await self._pause(ctx)
+
+    @cog_ext.cog_slash(name="pause", description="Pauses or unpauses the currently spoken text")
+    async def slashpause(self, ctx):
+        await self._pause(ctx, is_slash=True)
+
+    async def _stop(self, ctx):
+        if ctx.author.voice:
+            if ctx.author.voice.channel and ctx.author.voice.channel == ctx.guild.voice_client.channel:
+                voice_client: discord.voice_client.VoiceClient = ctx.guild.voice_client
+                if voice_client in speaking_messages.keys():
+                    voice_client.stop()
+                    await ctx.send(embed=discord.Embed(
+                        title=f":stop_button: Stopped",
+                        color=discord.Color(8847232)
+                    ))
+                else:
+                    await ctx.send(embed=discord.Embed(
+                        title=f":x: Not speaking anything right now.",
+                        color=discord.Color(8847232)
+                    ))
+                return
+        await ctx.send(embed=discord.Embed(
+                    title=f":x: You need to be connected to the same voice channel as the bot.",
+                    color=discord.Color(8847232)
+                ))
+
+    @commands.command(name="stop")
+    async def stop(self, ctx):
+        await self._stop(ctx)
+
+    @cog_ext.cog_slash(name="stop", description="Stops the currently spoken text")
+    async def slashstop(self, ctx):
+        await self._stop(ctx)
