@@ -10,6 +10,12 @@ from discord_slash.utils import manage_commands
 
 from core.commands.test_commands import TestCommands
 from core.commands.vc_commands import VcCommands
+from core.commands.preference_commands import PreferenceCommands
+from core.preferences import Preferences
+
+import core.storage
+import core.defaults
+import tts.sapi
 
 
 def load_config():
@@ -67,6 +73,13 @@ if success:
 else:
     Logger.warn("TTS file folder still has some files left behind, as some couldn't be removed")
 
+voice = tts.sapi.Sapi()
+core.storage.available_voices = voice.get_voice_names()
+Logger.log(f"Available voices: {core.storage.available_voices}")
+
+core.defaults.default_voice_name = core.storage.available_voices[0]
+core.defaults.default_voice_rate = 0
+
 
 @client.event
 async def on_ready():
@@ -76,4 +89,5 @@ async def on_ready():
 def start_bot(token):
     client.add_cog(TestCommands(client, config, token))
     client.add_cog(VcCommands(client, config))
+    client.add_cog(PreferenceCommands(client, config))
     client.run(token)

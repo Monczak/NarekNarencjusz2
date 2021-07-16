@@ -10,10 +10,13 @@ import os
 import wave
 import contextlib
 import math
+import shelve
 
 from core.text_to_speech import create_tts_file
 from core.utils import timestamp
 from core.storage import speaking_messages, embed_contents
+from core.preferences import Preferences
+import core.defaults
 
 
 class VcCommands(commands.Cog):
@@ -33,7 +36,7 @@ class VcCommands(commands.Cog):
                                     color=discord.Color(8847232)
                                 ))
             elif ctx.guild.voice_client and channel != ctx.guild.voice_client.channel:
-                await ctx.send(embed= discord.Embed(
+                await ctx.send(embed=discord.Embed(
                                     title=f":x: Already connected to another channel.",
                                     color=discord.Color(8847232)
                                 ))
@@ -110,6 +113,7 @@ class VcCommands(commands.Cog):
                     if is_slash:
                         await ctx.defer()
 
+                    core.storage.previous_tts_inputs[ctx.author] = message
                     await self.synthesize_and_speak(ctx, message, voice_client, is_slash)
                 else:
                     await ctx.send(embed=discord.Embed(
@@ -124,7 +128,11 @@ class VcCommands(commands.Cog):
                 ))
 
     async def synthesize_and_speak(self, ctx, message, voice_client, is_slash):
-        file_path = create_tts_file(self.config["ttsFilePath"], message)
+        with shelve.open("user_preferences") as db:
+            preferences = db.get(f"{ctx.author.id}", Preferences(core.defaults.default_voice_name, core.defaults.default_voice_rate))
+            voice_name = preferences.voice_name
+
+        file_path = create_tts_file(self.config["ttsFilePath"], message, voice_name)
 
         with contextlib.closing(wave.open(file_path, "r")) as file:
             frames = file.getnframes()
@@ -249,3 +257,39 @@ class VcCommands(commands.Cog):
     @cog_ext.cog_slash(name="stop", description="Stops the currently spoken text")
     async def slashstop(self, ctx):
         await self._stop(ctx)
+
+    async def _repeat(self, ctx, is_slash=False):
+        if ctx.author.voice:
+            if ctx.author.voice.channel and ctx.author.voice.channel == ctx.guild.voice_client.channel:
+                if ctx.author in core.storage.previous_tts_inputs.keys():
+                    voice_client: discord.voice_client.VoiceClient = ctx.guild.voice_client
+                    if not voice_client.is_playing():
+                        if is_slash:
+                            await ctx.defer()
+
+                        await self.synthesize_and_speak(ctx, core.storage.previous_tts_inputs[ctx.author], voice_client, is_slash)
+                    else:
+                        await ctx.send(embed=discord.Embed(
+                            title=f":x: Please wait until I finish speaking.",
+                            description="Queue functionality coming soon:tm:",
+                            color=discord.Color(8847232)
+                        ))
+                else:
+                    await ctx.send(embed=discord.Embed(
+                        title=f":x: Nothing to repeat.",
+                        description="Make me say something with /speak first",
+                        color=discord.Color(8847232)
+                    ))
+                return
+        await ctx.send(embed=discord.Embed(
+            title=f":x: You need to be connected to the same voice channel as the bot.",
+            color=discord.Color(8847232)
+        ))
+
+    @commands.command(name="repeat")
+    async def repeat(self, ctx):
+        await self._repeat(ctx)
+
+    @cog_ext.cog_slash(name="repeat", description="Repeats the last thing you made the bot say")
+    async def slashrepeat(self, ctx):
+        await self._repeat(ctx, is_slash=True)
