@@ -29,6 +29,22 @@ class PreferenceCommands(commands.Cog):
         self.client: discord.Client = client
         self.config = config
 
+    async def _voice(self, ctx):
+        with shelve.open("user_preferences") as db:
+            preferences = db.get(f"{ctx.author.id}",
+                                 Preferences(core.defaults.default_voice_name, core.defaults.default_voice_rate))
+
+        await ctx.send(embed=discord.Embed(
+                        title=f":speaking_head: Your voice preferences",
+                        description=f"**{preferences.voice_name}**\n"
+                                    f":timer: Speaking rate: {preferences.voice_rate}",
+                        color=discord.Color(8847232)
+        ).set_footer(text="Use the /voice subcommands to modify these preferences."))
+
+    @cog_ext.cog_subcommand(base="voice", name="show", description="Shows your voice preferences")
+    async def slashvoice(self, ctx):
+        await self._voice(ctx)
+
     def clean_voice_name(self, name):
         to_remove = ["Microsoft", "Desktop"]
         return " ".join([word for word in name.split() if word not in to_remove])
@@ -70,7 +86,7 @@ class PreferenceCommands(commands.Cog):
                         title=":x: Timed out",
                         color=discord.Color(8847232)), components=None)
 
-    @cog_ext.cog_slash(name="selectvoice", description="Select a voice of your preference")
+    @cog_ext.cog_subcommand(base="voice", name="select", description="Select a voice of your preference")
     async def slashselectvoice(self, ctx):
         await self._selectvoice(ctx)
 
@@ -100,7 +116,7 @@ class PreferenceCommands(commands.Cog):
         rate = int(ctx.message.content.lstrip(f"{self.config['commandPrefix']}setrate").strip())
         await self._setrate(ctx, rate)
 
-    @cog_ext.cog_slash(name="setrate", description="Sets the voice's rate (speaking speed)", options=[
+    @cog_ext.cog_subcommand(base="voice", name="rate", description="Sets the voice's rate (speaking speed)", options=[
             create_option(
                 name="rate",
                 description="The voice's rate (integer between -10 and 10)",
