@@ -1,6 +1,7 @@
 import os
 import json
 import glob
+import struct
 
 import discord
 from discord.ext import commands
@@ -81,6 +82,10 @@ core.defaults.default_voice_name = core.storage.available_voices[0]
 core.defaults.default_voice_rate = 0
 core.defaults.default_pitch_shift = 0
 
+bitness = struct.calcsize("P") * 8
+target = "x64" if bitness > 32 else "x86"
+filename = f"libopus-0.{target}.dll"
+discord.opus.load_opus(filename)
 
 @client.event
 async def on_ready():

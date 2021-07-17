@@ -15,7 +15,8 @@ class TestCommands(commands.Cog):
 
     def __init__(self, client, config, token):
         self.client: discord.Client = client
-        self.guild_ids = config["guildIds"]
+        if "guildIds" in config.keys():
+            self.guild_ids = config["guildIds"]
         self.tts_file_path = config["ttsFilePath"]
         self.token = token
 
