@@ -136,7 +136,7 @@ class VcCommands(commands.Cog):
 
     async def synthesize_and_speak(self, ctx, message, voice_client, is_slash):
         with shelve.open("user_preferences") as db:
-            preferences = db.get(f"{ctx.author.id}", Preferences(core.defaults.default_voice_name, core.defaults.default_voice_rate))
+            preferences = db.get(f"{ctx.author.id}", Preferences(core.defaults.default_voice_name, core.defaults.default_voice_rate, core.defaults.default_pitch_shift))
 
         file_path = create_tts_file(self.config["ttsFilePath"], message, preferences)
 

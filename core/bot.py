@@ -79,6 +79,7 @@ Logger.log(f"Available voices: {core.storage.available_voices}")
 
 core.defaults.default_voice_name = core.storage.available_voices[0]
 core.defaults.default_voice_rate = 0
+core.defaults.default_pitch_shift = 0
 
 
 @client.event

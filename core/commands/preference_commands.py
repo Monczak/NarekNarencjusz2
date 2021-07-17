@@ -32,12 +32,15 @@ class PreferenceCommands(commands.Cog):
     async def _voice(self, ctx):
         with shelve.open("user_preferences") as db:
             preferences = db.get(f"{ctx.author.id}",
-                                 Preferences(core.defaults.default_voice_name, core.defaults.default_voice_rate))
+                                 Preferences(core.defaults.default_voice_name,
+                                             core.defaults.default_voice_rate,
+                                             core.defaults.default_pitch_shift))
 
         await ctx.send(embed=discord.Embed(
                         title=f":speaking_head: Your voice preferences",
                         description=f"**{preferences.voice_name}**\n"
-                                    f":timer: Speaking rate: {preferences.voice_rate}",
+                                    f":timer: Speaking rate: {preferences.voice_rate}\n"
+                                    f":arrow_heading_up: Pitch shift: {preferences.pitch_shift} semitones",
                         color=discord.Color(8847232)
         ).set_footer(text="Use the /voice subcommands to modify these preferences."))
 
@@ -74,7 +77,7 @@ class PreferenceCommands(commands.Cog):
             select_ctx: ComponentContext = await wait_for_component(self.client, components=action_row, timeout=60)
 
             with shelve.open("user_preferences") as db:
-                preferences = db.get(f"{select_ctx.author.id}", Preferences(core.defaults.default_voice_name, core.defaults.default_voice_rate))
+                preferences = db.get(f"{select_ctx.author.id}", Preferences(core.defaults.default_voice_name, core.defaults.default_voice_rate, core.defaults.default_pitch_shift))
                 preferences.voice_name = select_ctx.selected_options[0]
                 db[f"{select_ctx.author.id}"] = preferences
 
@@ -95,7 +98,7 @@ class PreferenceCommands(commands.Cog):
             if -10 <= rate <= 10:
                 with shelve.open("user_preferences") as db:
                     preferences = db.get(f"{ctx.author.id}",
-                                         Preferences(core.defaults.default_voice_name, core.defaults.default_voice_rate))
+                                         Preferences(core.defaults.default_voice_name, core.defaults.default_voice_rate, core.defaults.default_pitch_shift))
                     preferences.voice_rate = rate
                     db[f"{ctx.author.id}"] = preferences
 
@@ -126,3 +129,39 @@ class PreferenceCommands(commands.Cog):
         ])
     async def slashsetrate(self, ctx, rate):
         await self._setrate(ctx, rate)
+
+    async def _setpitch(self, ctx, pitch):
+        if isinstance(pitch, int):
+            if -24 <= pitch <= 24:
+                with shelve.open("user_preferences") as db:
+                    preferences = db.get(f"{ctx.author.id}",
+                                         Preferences(core.defaults.default_voice_name, core.defaults.default_voice_rate, core.defaults.default_pitch_shift))
+                    preferences.pitch_shift = pitch
+                    db[f"{ctx.author.id}"] = preferences
+
+                await ctx.send(embed=discord.Embed(
+                    title=f":speaking_head: Pitch set to {preferences.pitch_shift}.",
+                    color=discord.Color(8847232)
+                ).set_footer(text=f"Using {preferences.voice_name}"))
+                return
+        await ctx.send(embed=discord.Embed(
+                title=f":x: Invalid pitch.",
+                description="Pitch (semitones) must be an integer between -24 and 24 (inclusive).",
+                color=discord.Color(8847232)
+        ))
+
+    @commands.command(name="setpitch")
+    async def setpitch(self, ctx):
+        pitch = int(ctx.message.content.lstrip(f"{self.config['commandPrefix']}setpitch").strip())
+        await self._setrate(ctx, pitch)
+
+    @cog_ext.cog_subcommand(base="voice", name="pitch", description="Sets the voice's pitch", options=[
+        create_option(
+            name="pitch",
+            description="The voice's pitch (integer between -24 and 24)",
+            option_type=4,
+            required=True,
+        )
+    ])
+    async def slashsetpitch(self, ctx, pitch):
+        await self._setpitch(ctx, pitch)
