@@ -73,3 +73,40 @@ class PreferenceCommands(commands.Cog):
     @cog_ext.cog_slash(name="selectvoice", description="Select a voice of your preference")
     async def slashselectvoice(self, ctx):
         await self._selectvoice(ctx)
+
+    async def _setrate(self, ctx, rate):
+        if isinstance(rate, int):
+            if -10 <= rate <= 10:
+                with shelve.open("user_preferences") as db:
+                    preferences = db.get(f"{ctx.author.id}",
+                                         Preferences(core.defaults.default_voice_name, core.defaults.default_voice_rate))
+                    preferences.voice_rate = rate
+                    db[f"{ctx.author.id}"] = preferences
+
+                await ctx.send(embed=discord.Embed(
+                    title=f":speaking_head: Voice rate set to {preferences.voice_rate}.",
+                    color=discord.Color(8847232)
+                ).set_footer(text=f"Using {preferences.voice_name}"))
+                return
+        await ctx.send(embed=discord.Embed(
+                title=f":x: Invalid voice rate.",
+                description="Voice rate must be an integer between -10 and 10 (inclusive), where -10 is slowest, "
+                            "and 10 is fastest.",
+                color=discord.Color(8847232)
+        ))
+
+    @commands.command(name="setrate")
+    async def setrate(self, ctx):
+        rate = int(ctx.message.content.lstrip(f"{self.config['commandPrefix']}setrate").strip())
+        await self._setrate(ctx, rate)
+
+    @cog_ext.cog_slash(name="setrate", description="Sets the voice's rate (speaking speed)", options=[
+            create_option(
+                name="rate",
+                description="The voice's rate (integer between -10 and 10)",
+                option_type=4,
+                required=True,
+            )
+        ])
+    async def slashsetrate(self, ctx, rate):
+        await self._setrate(ctx, rate)

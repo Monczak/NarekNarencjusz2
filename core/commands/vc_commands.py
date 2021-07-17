@@ -130,9 +130,8 @@ class VcCommands(commands.Cog):
     async def synthesize_and_speak(self, ctx, message, voice_client, is_slash):
         with shelve.open("user_preferences") as db:
             preferences = db.get(f"{ctx.author.id}", Preferences(core.defaults.default_voice_name, core.defaults.default_voice_rate))
-            voice_name = preferences.voice_name
 
-        file_path = create_tts_file(self.config["ttsFilePath"], message, voice_name)
+        file_path = create_tts_file(self.config["ttsFilePath"], message, preferences)
 
         with contextlib.closing(wave.open(file_path, "r")) as file:
             frames = file.getnframes()
@@ -146,7 +145,7 @@ class VcCommands(commands.Cog):
             title=f":speaker: Speaking!",
             description=embed_content,
             color=discord.Color(8847232),
-        ).set_footer(text=duration_timestamp))
+        ).set_footer(text=f"{preferences.voice_name} • {duration_timestamp}"))
         speaking_messages[voice_client] = speaking_msg
         embed_contents[voice_client] = (embed_content, duration_timestamp)
 
@@ -159,7 +158,7 @@ class VcCommands(commands.Cog):
             title=f":speaker: Speaking finished",
             description=embed_content,
             color=discord.Color(8847232)
-        ).set_footer(text=duration_timestamp))
+        ).set_footer(text=f"{preferences.voice_name} • {duration_timestamp}"))
 
         os.remove(file_path)
         speaking_messages.pop(voice_client)
