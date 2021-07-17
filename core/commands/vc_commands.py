@@ -106,6 +106,13 @@ class VcCommands(commands.Cog):
         await self._leave(ctx)
 
     async def _speak(self, ctx, message, is_slash=False):
+        if ctx.guild.voice_client is None:
+            await ctx.send(embed=discord.Embed(
+                title=f":x: I am not in a voice channel.",
+                description="Use /join to get me in one!",
+                color=discord.Color(8847232)
+            ))
+            return
         if ctx.author.voice:
             if ctx.author.voice.channel and ctx.author.voice.channel == ctx.guild.voice_client.channel:
                 voice_client: discord.voice_client.VoiceClient = ctx.guild.voice_client
@@ -125,7 +132,7 @@ class VcCommands(commands.Cog):
         await ctx.send(embed=discord.Embed(
                     title=f":x: You need to be connected to the same voice channel as the bot.",
                     color=discord.Color(8847232)
-                ))
+        ))
 
     async def synthesize_and_speak(self, ctx, message, voice_client, is_slash):
         with shelve.open("user_preferences") as db:
@@ -180,6 +187,13 @@ class VcCommands(commands.Cog):
         await self._speak(ctx, text, is_slash=True)
 
     async def _pause(self, ctx: SlashContext, is_slash=False):
+        if ctx.guild.voice_client is None:
+            await ctx.send(embed=discord.Embed(
+                title=f":x: I am not in a voice channel.",
+                description="Use /join to get me in one!",
+                color=discord.Color(8847232)
+            ))
+            return
         if ctx.author.voice:
             if ctx.author.voice.channel and ctx.author.voice.channel == ctx.guild.voice_client.channel:
                 voice_client: discord.voice_client.VoiceClient = ctx.guild.voice_client
@@ -229,6 +243,13 @@ class VcCommands(commands.Cog):
         await self._pause(ctx, is_slash=True)
 
     async def _stop(self, ctx):
+        if ctx.guild.voice_client is None:
+            await ctx.send(embed=discord.Embed(
+                title=f":x: I am not in a voice channel.",
+                description="Use /join to get me in one!",
+                color=discord.Color(8847232)
+            ))
+            return
         if ctx.author.voice:
             if ctx.author.voice.channel and ctx.author.voice.channel == ctx.guild.voice_client.channel:
                 voice_client: discord.voice_client.VoiceClient = ctx.guild.voice_client
@@ -258,6 +279,13 @@ class VcCommands(commands.Cog):
         await self._stop(ctx)
 
     async def _repeat(self, ctx, is_slash=False):
+        if ctx.guild.voice_client is None:
+            await ctx.send(embed=discord.Embed(
+                title=f":x: I am not in a voice channel.",
+                description="Use /join to get me in one!",
+                color=discord.Color(8847232)
+            ))
+            return
         if ctx.author.voice:
             if ctx.author.voice.channel and ctx.author.voice.channel == ctx.guild.voice_client.channel:
                 if ctx.author in core.storage.previous_tts_inputs.keys():
